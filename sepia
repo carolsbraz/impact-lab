@@ -1,0 +1,48 @@
+#include <thread>
+
+private: System::Void bt_filter_Sepia_MultiThread_Click(System::Object^ sender, System::EventArgs^ e) {
+    // Obter imagem de entrada
+    Bitmap^ inputImage = (Bitmap^)pbox_input->Image;
+
+    // Criar imagem de saída com as mesmas dimensões
+    Bitmap^ outputImage = gcnew Bitmap(inputImage->Width, inputImage->Height);
+
+    // Função lambda para aplicar o filtro sépia em uma faixa vertical de pixels
+    auto applySepia = [=](int startY, int endY) {
+        for (int y = startY; y < endY; y++) {
+            for (int x = 0; x < inputImage->Width; x++) {
+                Color pixel = inputImage->GetPixel(x, y);
+
+                int r = pixel.R;
+                int g = pixel.G;
+                int b = pixel.B;
+
+                int tr = (int)(0.393 * r + 0.769 * g + 0.189 * b);
+                int tg = (int)(0.349 * r + 0.686 * g + 0.168 * b);
+                int tb = (int)(0.272 * r + 0.534 * g + 0.131 * b);
+
+                // Clamp dos valores
+                tr = Math::Min(255, tr);
+                tg = Math::Min(255, tg);
+                tb = Math::Min(255, tb);
+
+                Color sepia = Color::FromArgb(tr, tg, tb);
+                outputImage->SetPixel(x, y, sepia);
+            }
+        }
+    };
+
+    // Dividir altura da imagem em 2 partes
+    int midY = inputImage->Height / 2;
+
+    // Criar threads
+    std::thread t1(applySepia, 0, midY);
+    std::thread t2(applySepia, midY, inputImage->Height);
+
+    // Aguardar as threads terminarem
+    t1.join();
+    t2.join();
+
+    // Mostrar imagem de saída
+    pbox_output->Image = outputImage;
+}
